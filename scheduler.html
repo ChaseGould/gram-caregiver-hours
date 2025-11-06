@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caregiver Hours Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f9; color: #333; padding: 20px; }
+  h1, h2 { color: #2c3e50; margin-bottom: 10px; }
+  p { margin-bottom: 10px; font-weight: bold; }
+
+  form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 30px; }
+
+  label { display: block; margin-bottom: 12px; }
+  input[type="text"], input[type="number"], select { width: 100%; padding: 8px 10px; margin-top: 4px; border-radius: 6px; border: 1px solid #ccc; }
+
+  button { padding: 10px 20px; border: none; border-radius: 8px; background-color: #3498db; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+  button:hover { background-color: #2980b9; }
+
+  /* Day toggle buttons */
+  #dayButtons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  #dayButtons button {
+    flex: 1;
+    min-width: 50px;
+    padding: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #3498db;
+    background-color: white;
+    color: #3498db;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  #dayButtons button.selected {
+    background-color: #3498db;
+    color: white;
+  }
+
+  #dayButtons button:hover {
+    opacity: 0.8;
+  }
+
+  /* Table styling */
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  th, td { padding: 12px; text-align: center; }
+  th { background-color: #3498db; color: white; }
+  tr:nth-child(even) { background: #f4f7f9; }
+  tr:hover { background: #e1f0ff; }
+
+  @media (max-width: 600px) {
+    th, td { font-size: 14px; padding: 8px; }
+    button, select, input[type="text"], input[type="number"] { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Caregiver Hours Tracker</h1>
+
+<p>Total Monthly Pool: <span id="totalPool">177</span> hours</p>
+<p>Remaining Hours: <span id="remainingHours">177</span></p>
+
+<h2>Select Month & Year</h2>
+<form id="monthForm">
+  <label>
+    Month: 
+    <select id="monthSelect">
+      <option value="0">January</option>
+      <option value="1">February</option>
+      <option value="2">March</option>
+      <option value="3">April</option>
+      <option value="4">May</option>
+      <option value="5">June</option>
+      <option value="6">July</option>
+      <option value="7">August</option>
+      <option value="8">September</option>
+      <option value="9">October</option>
+      <option value="10">November</option>
+      <option value="11">December</option>
+    </select>
+  </label>
+  <label>
+    Year: 
+    <input type="number" id="yearInput" min="2000" max="2100" value="">
+  </label>
+  <button type="submit">Update Month</button>
+</form>
+
+<h2>Add Caregiver</h2>
+<form id="caregiverForm">
+  <label>Name: <input type="text" id="name" required placeholder="Caregiver Name"></label>
+  <label>Days of Week:</label>
+  <div id="dayButtons">
+    <button type="button" data-day="0">Sun</button>
+    <button type="button" data-day="1">Mon</button>
+    <button type="button" data-day="2">Tue</button>
+    <button type="button" data-day="3">Wed</button>
+    <button type="button" data-day="4">Thu</button>
+    <button type="button" data-day="5">Fri</button>
+    <button type="button" data-day="6">Sat</button>
+  </div>
+  <label>Hours Pay Period 1 (1-15): <input type="number" id="hours1" required min="0" placeholder="e.g. 40"></label>
+  <label id="pp2Label">Hours Pay Period 2 (16-end): <input type="number" id="hours2" required min="0" placeholder="e.g. 40"></label>
+  <button type="submit">Add Caregiver</button>
+</form>
+
+<h2>Caregivers Schedule</h2>
+<table id="caregiverTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Days</th>
+      <th>PP1 Days</th>
+      <th>Hours/Day 1</th>
+      <th>PP2 Days</th>
+      <th>Hours/Day 2</th>
+      <th>Total Hours</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const totalPool = 177;
+let remaining = totalPool;
+const caregivers = [];
+
+const monthSelect = document.getElementById('monthSelect');
+const yearInput = document.getElementById('yearInput');
+const today = new Date();
+monthSelect.value = today.getMonth();
+yearInput.value = today.getFullYear();
+
+const dayButtons = document.querySelectorAll('#dayButtons button');
+const selectedDaysSet = new Set();
+
+// Toggle day buttons
+dayButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const day = parseInt(btn.dataset.day);
+    if (selectedDaysSet.has(day)) {
+      selectedDaysSet.delete(day);
+      btn.classList.remove('selected');
+    } else {
+      selectedDaysSet.add(day);
+      btn.classList.add('selected');
+    }
+  });
+});
+
+// Utility function to get working days for a caregiver
+function daysInMonth(year, month, dayFilter) {
+  const days = [];
+  const date = new Date(year, month, 1);
+  while (date.getMonth() === month) {
+    if (dayFilter.includes(date.getDay())) days.push(new Date(date));
+    date.setDate(date.getDate() + 1);
+  }
+  return days;
+}
+
+// Update PP2 label dynamically
+function updatePP2Label() {
+  const year = parseInt(yearInput.value);
+  const month = parseInt(monthSelect.value);
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const label = document.getElementById('pp2Label');
+  label.textContent = `Hours Pay Period 2 (16-${lastDay}): `;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.id = 'hours2';
+  input.required = true;
+  input.min = 0;
+  input.placeholder = 'e.g. 40';
+  label.appendChild(input);
+}
+
+// Recalculate the table for a given month/year
+function updateTable() {
+  const tbody = document.querySelector('#caregiverTable tbody');
+  tbody.innerHTML = '';
+  const year = parseInt(yearInput.value);
+  const month = parseInt(monthSelect.value);
+  let used = 0;
+
+  caregivers.forEach(c => {
+    const pp1Days = daysInMonth(year, month, c.selectedDays).filter(d => d.getDate() <= 15);
+    const pp2Days = daysInMonth(year, month, c.selectedDays).filter(d => d.getDate() >= 16);
+
+    const hoursPerDay1 = pp1Days.length ? (c.hours1 / pp1Days.length).toFixed(2) : 0;
+    const hoursPerDay2 = pp2Days.length ? (c.hours2 / pp2Days.length).toFixed(2) : 0;
+    const totalHours = c.hours1 + c.hours2;
+    used += totalHours;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${c.name}</td>
+      <td>${c.selectedDays.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</td>
+      <td>${pp1Days.length}</td>
+      <td>${hoursPerDay1}</td>
+      <td>${pp2Days.length}</td>
+      <td>${hoursPerDay2}</td>
+      <td>${totalHours}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  remaining = totalPool - used;
+  document.getElementById('remainingHours').textContent = remaining;
+}
+
+// Add caregiver form
+document.getElementById('caregiverForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const name = document.getElementById('name').value;
+  const hours1 = parseFloat(document.getElementById('hours1').value);
+  const hours2 = parseFloat(document.getElementById('hours2').value);
+
+  const selectedDays = Array.from(selectedDaysSet).sort();
+
+  caregivers.push({ name, selectedDays, hours1, hours2 });
+  updateTable();
+
+  this.reset();
+  selectedDaysSet.clear();
+  dayButtons.forEach(btn => btn.classList.remove('selected'));
+  updatePP2Label();
+});
+
+// Month/year selection form
+document.getElementById('monthForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  updatePP2Label();
+  updateTable();
+});
+
+// Initial load
+updatePP2Label();
+updateTable();
+</script>
+
+</body>
+</html>
