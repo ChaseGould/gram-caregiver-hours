@@ -6,56 +6,42 @@
 <title>Caregiver Hours Tracker</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f9; color: #333; padding: 20px; }
-  h1, h2 { color: #2c3e50; margin-bottom: 10px; }
-  p { margin-bottom: 10px; font-weight: bold; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f9; color: #2c3e50; padding: 24px; }
+  h1, h2 { margin-bottom: 10px; }
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat { background: #fff; padding: 12px 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); font-weight: 600; }
+  .remaining.negative { color: #e74c3c; }
 
-  form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 30px; }
-
-  label { display: block; margin-bottom: 12px; }
-  input[type="text"], input[type="number"], select { width: 100%; padding: 8px 10px; margin-top: 4px; border-radius: 6px; border: 1px solid #ccc; }
-
-  button { padding: 10px 20px; border: none; border-radius: 8px; background-color: #3498db; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
-  button:hover { background-color: #2980b9; }
+  form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 24px; }
+  label { display: block; margin-bottom: 12px; font-weight: 600; color: #34495e; }
+  input[type="text"], input[type="number"], select {
+    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #d0d7de; margin-top: 6px;
+  }
+  button { padding: 10px 16px; border: none; border-radius: 8px; background: #3498db; color: #fff; font-weight: 700; cursor: pointer; transition: 0.2s; }
+  button:hover { background: #2980b9; }
 
   /* Day toggle buttons */
-  #dayButtons {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-  }
-
+  #dayButtons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
   #dayButtons button {
-    flex: 1;
-    min-width: 50px;
-    padding: 10px 0;
-    border-radius: 8px;
-    border: 1px solid #3498db;
-    background-color: white;
-    color: #3498db;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
+    flex: 1; min-width: 64px; padding: 10px 0; border-radius: 10px; border: 1px solid #3498db;
+    background: #fff; color: #3498db; font-weight: 700; cursor: pointer; transition: 0.15s;
   }
+  #dayButtons button.selected { background: #3498db; color: #fff; }
+  #dayButtons button:hover { filter: brightness(0.95); }
 
-  #dayButtons button.selected {
-    background-color: #3498db;
-    color: white;
-  }
-
-  #dayButtons button:hover {
-    opacity: 0.8;
-  }
-
-  /* Table styling */
-  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  /* Table */
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   th, td { padding: 12px; text-align: center; }
-  th { background-color: #3498db; color: white; }
-  tr:nth-child(even) { background: #f4f7f9; }
-  tr:hover { background: #e1f0ff; }
+  th { background: #3498db; color: #fff; }
+  tr:nth-child(even) { background: #f8fafc; }
+  tr:hover { background: #eaf4ff; }
 
-  @media (max-width: 600px) {
+  .removeBtn {
+    background: #e74c3c; color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 700; cursor: pointer; border: none;
+  }
+  .removeBtn:hover { background: #c0392b; }
+
+  @media (max-width: 640px) {
     th, td { font-size: 14px; padding: 8px; }
     button, select, input[type="text"], input[type="number"] { width: 100%; }
   }
@@ -65,13 +51,15 @@
 
 <h1>Caregiver Hours Tracker</h1>
 
-<p>Total Monthly Pool: <span id="totalPool">177</span> hours</p>
-<p>Remaining Hours: <span id="remainingHours">177</span></p>
+<div class="stats">
+  <div class="stat">Total Monthly Pool: <span id="totalPool">177</span> hrs</div>
+  <div class="stat remaining" id="remainingWrap">Remaining: <span id="remainingHours">177</span> hrs</div>
+</div>
 
 <h2>Select Month & Year</h2>
 <form id="monthForm">
   <label>
-    Month: 
+    Month
     <select id="monthSelect">
       <option value="0">January</option>
       <option value="1">February</option>
@@ -88,16 +76,20 @@
     </select>
   </label>
   <label>
-    Year: 
-    <input type="number" id="yearInput" min="2000" max="2100" value="">
+    Year
+    <input type="number" id="yearInput" min="2000" max="2100">
   </label>
   <button type="submit">Update Month</button>
 </form>
 
 <h2>Add Caregiver</h2>
 <form id="caregiverForm">
-  <label>Name: <input type="text" id="name" required placeholder="Caregiver Name"></label>
-  <label>Days of Week:</label>
+  <label>
+    Name
+    <input type="text" id="name" required placeholder="Caregiver Name">
+  </label>
+
+  <label>Days of Week</label>
   <div id="dayButtons">
     <button type="button" data-day="0">Sun</button>
     <button type="button" data-day="1">Mon</button>
@@ -107,8 +99,15 @@
     <button type="button" data-day="5">Fri</button>
     <button type="button" data-day="6">Sat</button>
   </div>
-  <label>Hours Pay Period 1 (1-15): <input type="number" id="hours1" required min="0" placeholder="e.g. 40"></label>
-  <label id="pp2Label">Hours Pay Period 2 (16-end): <input type="number" id="hours2" required min="0" placeholder="e.g. 40"></label>
+
+  <label>Hours Pay Period 1 (1–15)
+    <input type="number" id="hours1" required min="0" placeholder="e.g. 40">
+  </label>
+
+  <label id="pp2Label">Hours Pay Period 2 (16-end)
+    <input type="number" id="hours2" required min="0" placeholder="e.g. 40">
+  </label>
+
   <button type="submit">Add Caregiver</button>
 </form>
 
@@ -123,128 +122,143 @@
       <th>PP2 Days</th>
       <th>Hours/Day 2</th>
       <th>Total Hours</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
 <script>
-const totalPool = 177;
-let remaining = totalPool;
-const caregivers = [];
+  const totalPool = 177;
+  let caregivers = JSON.parse(localStorage.getItem('caregiversData') || '[]');
+  let remaining = totalPool;
 
-const monthSelect = document.getElementById('monthSelect');
-const yearInput = document.getElementById('yearInput');
-const today = new Date();
-monthSelect.value = today.getMonth();
-yearInput.value = today.getFullYear();
+  const monthSelect = document.getElementById('monthSelect');
+  const yearInput = document.getElementById('yearInput');
+  const remainingEl = document.getElementById('remainingHours');
+  const remainingWrap = document.getElementById('remainingWrap');
+  const today = new Date();
+  monthSelect.value = today.getMonth();
+  yearInput.value = today.getFullYear();
 
-const dayButtons = document.querySelectorAll('#dayButtons button');
-const selectedDaysSet = new Set();
+  // Day toggle
+  const dayButtons = document.querySelectorAll('#dayButtons button');
+  const selectedDaysSet = new Set();
+  dayButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const day = Number(btn.dataset.day);
+      if (selectedDaysSet.has(day)) {
+        selectedDaysSet.delete(day);
+        btn.classList.remove('selected');
+      } else {
+        selectedDaysSet.add(day);
+        btn.classList.add('selected');
+      }
+    });
+  });
 
-// Toggle day buttons
-dayButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const day = parseInt(btn.dataset.day);
-    if (selectedDaysSet.has(day)) {
-      selectedDaysSet.delete(day);
-      btn.classList.remove('selected');
-    } else {
-      selectedDaysSet.add(day);
-      btn.classList.add('selected');
+  function workingDaysInMonth(year, month, dayFilter) {
+    const out = [];
+    const d = new Date(year, month, 1);
+    while (d.getMonth() === month) {
+      if (dayFilter.includes(d.getDay())) out.push(new Date(d));
+      d.setDate(d.getDate() + 1);
     }
-  });
-});
-
-// Utility function to get working days for a caregiver
-function daysInMonth(year, month, dayFilter) {
-  const days = [];
-  const date = new Date(year, month, 1);
-  while (date.getMonth() === month) {
-    if (dayFilter.includes(date.getDay())) days.push(new Date(date));
-    date.setDate(date.getDate() + 1);
+    return out;
   }
-  return days;
-}
 
-// Update PP2 label dynamically
-function updatePP2Label() {
-  const year = parseInt(yearInput.value);
-  const month = parseInt(monthSelect.value);
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  const label = document.getElementById('pp2Label');
-  label.textContent = `Hours Pay Period 2 (16-${lastDay}): `;
-  const input = document.createElement('input');
-  input.type = 'number';
-  input.id = 'hours2';
-  input.required = true;
-  input.min = 0;
-  input.placeholder = 'e.g. 40';
-  label.appendChild(input);
-}
+  function updatePP2Label() {
+    const y = Number(yearInput.value);
+    const m = Number(monthSelect.value);
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const pp2Label = document.getElementById('pp2Label');
+    const input = document.getElementById('hours2');
+    pp2Label.firstChild && pp2Label.removeChild(pp2Label.firstChild);
+    pp2Label.insertAdjacentText('afterbegin', `Hours Pay Period 2 (16–${lastDay}) `);
+    if (!input) {
+      const newInput = document.createElement('input');
+      newInput.type = 'number';
+      newInput.id = 'hours2';
+      newInput.required = true;
+      newInput.min = 0;
+      newInput.placeholder = 'e.g. 40';
+      pp2Label.appendChild(newInput);
+    }
+  }
 
-// Recalculate the table for a given month/year
-function updateTable() {
-  const tbody = document.querySelector('#caregiverTable tbody');
-  tbody.innerHTML = '';
-  const year = parseInt(yearInput.value);
-  const month = parseInt(monthSelect.value);
-  let used = 0;
+  function saveToLocalStorage() {
+    localStorage.setItem('caregiversData', JSON.stringify(caregivers));
+  }
 
-  caregivers.forEach(c => {
-    const pp1Days = daysInMonth(year, month, c.selectedDays).filter(d => d.getDate() <= 15);
-    const pp2Days = daysInMonth(year, month, c.selectedDays).filter(d => d.getDate() >= 16);
+  function renderTable() {
+    const tbody = document.querySelector('#caregiverTable tbody');
+    tbody.innerHTML = '';
+    const y = Number(yearInput.value);
+    const m = Number(monthSelect.value);
+    let used = 0;
 
-    const hoursPerDay1 = pp1Days.length ? (c.hours1 / pp1Days.length).toFixed(2) : 0;
-    const hoursPerDay2 = pp2Days.length ? (c.hours2 / pp2Days.length).toFixed(2) : 0;
-    const totalHours = c.hours1 + c.hours2;
-    used += totalHours;
+    caregivers.forEach((c, idx) => {
+      const all = workingDaysInMonth(y, m, c.selectedDays);
+      const pp1Days = all.filter(d => d.getDate() <= 15);
+      const pp2Days = all.filter(d => d.getDate() >= 16);
+      const hpd1 = pp1Days.length ? (c.hours1 / pp1Days.length).toFixed(2) : '0.00';
+      const hpd2 = pp2Days.length ? (c.hours2 / pp2Days.length).toFixed(2) : '0.00';
+      const total = (c.hours1 || 0) + (c.hours2 || 0);
+      used += total;
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${c.name}</td>
-      <td>${c.selectedDays.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</td>
-      <td>${pp1Days.length}</td>
-      <td>${hoursPerDay1}</td>
-      <td>${pp2Days.length}</td>
-      <td>${hoursPerDay2}</td>
-      <td>${totalHours}</td>
-    `;
-    tbody.appendChild(tr);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.name}</td>
+        <td>${c.selectedDays.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</td>
+        <td>${pp1Days.length}</td>
+        <td>${hpd1}</td>
+        <td>${pp2Days.length}</td>
+        <td>${hpd2}</td>
+        <td>${total}</td>
+        <td><button class="removeBtn" data-index="${idx}">Remove</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    remaining = totalPool - used;
+    remainingEl.textContent = remaining;
+    remainingWrap.classList.toggle('negative', remaining < 0);
+
+    tbody.querySelectorAll('.removeBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.index);
+        caregivers.splice(i, 1);
+        saveToLocalStorage();
+        renderTable();
+      });
+    });
+  }
+
+  document.getElementById('caregiverForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const hours1 = Number(document.getElementById('hours1').value);
+    const hours2 = Number(document.getElementById('hours2').value);
+    const selectedDays = Array.from(selectedDaysSet).sort((a,b)=>a-b);
+    if (!name) return;
+
+    caregivers.push({ name, selectedDays, hours1, hours2 });
+    saveToLocalStorage();
+
+    e.target.reset();
+    selectedDaysSet.clear();
+    dayButtons.forEach(b => b.classList.remove('selected'));
+    renderTable();
   });
 
-  remaining = totalPool - used;
-  document.getElementById('remainingHours').textContent = remaining;
-}
+  document.getElementById('monthForm').addEventListener('submit', e => {
+    e.preventDefault();
+    updatePP2Label();
+    renderTable();
+  });
 
-// Add caregiver form
-document.getElementById('caregiverForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const name = document.getElementById('name').value;
-  const hours1 = parseFloat(document.getElementById('hours1').value);
-  const hours2 = parseFloat(document.getElementById('hours2').value);
-
-  const selectedDays = Array.from(selectedDaysSet).sort();
-
-  caregivers.push({ name, selectedDays, hours1, hours2 });
-  updateTable();
-
-  this.reset();
-  selectedDaysSet.clear();
-  dayButtons.forEach(btn => btn.classList.remove('selected'));
   updatePP2Label();
-});
-
-// Month/year selection form
-document.getElementById('monthForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  updatePP2Label();
-  updateTable();
-});
-
-// Initial load
-updatePP2Label();
-updateTable();
+  renderTable();
 </script>
 
 </body>
