@@ -30,9 +30,10 @@
       font-weight: 500;
     }
     .form {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
+    display: flex;
+    flex-direction: column; /* stack inputs vertically */
+    gap: 8px;
+    margin-bottom: 20px;
     }
     .form input {
       flex: 1;
@@ -50,6 +51,7 @@
       cursor: pointer;
       font-size: 1em;
       transition: background 0.2s;
+      width: 100%; /* make inputs and button full width */
     }
     .form button:hover {
       background: #0056b3;
