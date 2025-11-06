@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caregiver Hours Tracker Per Pay Period</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f7f9fc;
+      color: #222;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 0.5em;
+    }
+    .summary {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.1em;
+      font-weight: 500;
+    }
+    .form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .form input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+    .form button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.2s;
+    }
+    .form button:hover {
+      background: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #f0f3f8;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #d00;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    /* NEW: red style for zero or negative remaining hours */
+    .warning {
+      color: #d00;
+    }
+  </style>
+</head>
+<body>
+  <h1>Caregiver Hours Tracker</h1>
+
+  <div class="summary">
+    <div>Total Hours: <strong id="total">88.5</strong></div>
+    <div>Remaining: <strong id="remaining">88.5</strong></div>
+  </div>
+
+  <div class="form">
+    <input type="text" id="name" placeholder="Caregiver name" />
+    <input type="number" id="hours" step="0.25" placeholder="Hours" />
+    <button id="add">Add</button>
+  </div>
+
+  <table id="table">
+    <thead>
+      <tr>
+        <th>Caregiver</th>
+        <th>Hours</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const totalHours = 88.5;
+    const tableBody = document.querySelector('#table tbody');
+    const remainingDisplay = document.getElementById('remaining');
+    const nameInput = document.getElementById('name');
+    const hoursInput = document.getElementById('hours');
+    const addButton = document.getElementById('add');
+
+    // Load saved data
+    let entries = JSON.parse(localStorage.getItem('caregiverEntries')) || [];
+    renderTable();
+
+    function renderTable() {
+      tableBody.innerHTML = '';
+      let used = 0;
+      entries.forEach((entry, index) => {
+        used += Number(entry.hours);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${entry.name}</td>
+          <td>${entry.hours}</td>
+          <td><button class="delete-btn" onclick="deleteEntry(${index})">✕</button></td>
+        `;
+        tableBody.appendChild(row);
+      });
+      const remaining = (totalHours - used).toFixed(2);
+      remainingDisplay.textContent = remaining;
+      // 🔴 Make remaining red when 0 or less
+      if (remaining <= 0) {
+        remainingDisplay.classList.add('warning');
+      } else {
+        remainingDisplay.classList.remove('warning');
+      }
+      localStorage.setItem('caregiverEntries', JSON.stringify(entries));
+    }
+
+    addButton.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const hours = parseFloat(hoursInput.value);
+      if (!name || isNaN(hours) || hours <= 0) return alert('Enter valid name and hours.');
+      entries.push({ name, hours });
+      nameInput.value = '';
+      hoursInput.value = '';
+      renderTable();
+    });
+
+    function deleteEntry(index) {
+      entries.splice(index, 1);
+      renderTable();
+    }
+  </script>
+</body>
+</html>
