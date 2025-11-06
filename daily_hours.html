@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Caregiver Daily Hours Tracker</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:#f4f7f9; color:#2c3e50; padding:24px; }
+  h1,h2 { margin-bottom:10px; }
+  .stats { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .stat { background:#fff; padding:12px 16px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); font-weight:600; }
+  .remaining.negative { color:#e74c3c; }
+
+  form { background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-bottom:24px; }
+  label { display:block; margin-bottom:12px; font-weight:600; color:#34495e; }
+  input[type="text"], input[type="number"], select {
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid #d0d7de; margin-top:6px;
+  }
+  button { padding:10px 16px; border:none; border-radius:8px; background:#3498db; color:#fff; font-weight:700; cursor:pointer; transition:0.2s; }
+  button:hover { background:#2980b9; }
+
+  /* Day toggle buttons */
+  #dayButtons { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  #dayButtons button {
+    flex:1; min-width:64px; padding:10px 0; border-radius:10px; border:1px solid #3498db;
+    background:#fff; color:#3498db; font-weight:700; cursor:pointer; transition:0.15s;
+  }
+  #dayButtons button.selected { background:#3498db; color:#fff; }
+  #dayButtons button:hover { filter:brightness(0.95); }
+
+  /* Table */
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+  th, td { padding:12px; text-align:center; }
+  th { background:#3498db; color:#fff; }
+  tr:nth-child(even) { background:#f8fafc; }
+  tr:hover { background:#eaf4ff; }
+
+  .removeBtn {
+    background:#e74c3c; color:#fff; padding:6px 10px; border-radius:6px; font-weight:700; cursor:pointer; border:none;
+  }
+  .removeBtn:hover { background:#c0392b; }
+
+  @media (max-width:640px){
+    th,td{font-size:14px;padding:8px;}
+    button,select,input[type="text"],input[type="number"]{width:100%;}
+  }
+</style>
+</head>
+<body>
+
+<h1>Caregiver Daily Hours Tracker</h1>
+
+<div class="stats">
+  <div class="stat">Total Monthly Pool: <span id="totalPool">177</span> hrs</div>
+  <div class="stat remaining" id="remainingWrap">Remaining: <span id="remainingHours">177</span> hrs</div>
+</div>
+
+<h2>Select Month & Year</h2>
+<form id="monthForm">
+  <label>
+    Month
+    <select id="monthSelect">
+      <option value="0">January</option>
+      <option value="1">February</option>
+      <option value="2">March</option>
+      <option value="3">April</option>
+      <option value="4">May</option>
+      <option value="5">June</option>
+      <option value="6">July</option>
+      <option value="7">August</option>
+      <option value="8">September</option>
+      <option value="9">October</option>
+      <option value="10">November</option>
+      <option value="11">December</option>
+    </select>
+  </label>
+  <label>
+    Year
+    <input type="number" id="yearInput" min="2000" max="2100">
+  </label>
+  <button type="submit">Update Month</button>
+</form>
+
+<h2>Add Caregiver</h2>
+<form id="caregiverForm">
+  <label>
+    Name
+    <input type="text" id="name" required placeholder="Caregiver Name">
+  </label>
+
+  <label>Days of Week</label>
+  <div id="dayButtons">
+    <button type="button" data-day="0">Sun</button>
+    <button type="button" data-day="1">Mon</button>
+    <button type="button" data-day="2">Tue</button>
+    <button type="button" data-day="3">Wed</button>
+    <button type="button" data-day="4">Thu</button>
+    <button type="button" data-day="5">Fri</button>
+    <button type="button" data-day="6">Sat</button>
+  </div>
+
+  <label>Hours Per Working Day
+    <input type="number" id="hoursPerDay" required min="0" placeholder="e.g. 4">
+  </label>
+
+  <button type="submit">Add Caregiver</button>
+</form>
+
+<h2>Caregivers Schedule</h2>
+<table id="caregiverTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Days</th>
+      <th>PP1 Days</th>
+      <th>PP1 Total Hours</th>
+      <th>PP2 Days</th>
+      <th>PP2 Total Hours</th>
+      <th>Total Monthly Hours</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const totalPool = 177;
+  let caregivers = JSON.parse(localStorage.getItem('caregiversDailyData') || '[]');
+  let remaining = totalPool;
+
+  const monthSelect = document.getElementById('monthSelect');
+  const yearInput = document.getElementById('yearInput');
+  const remainingEl = document.getElementById('remainingHours');
+  const remainingWrap = document.getElementById('remainingWrap');
+  const today = new Date();
+  monthSelect.value = today.getMonth();
+  yearInput.value = today.getFullYear();
+
+  // Day toggle
+  const dayButtons = document.querySelectorAll('#dayButtons button');
+  const selectedDaysSet = new Set();
+  dayButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const day = Number(btn.dataset.day);
+      if (selectedDaysSet.has(day)) {
+        selectedDaysSet.delete(day);
+        btn.classList.remove('selected');
+      } else {
+        selectedDaysSet.add(day);
+        btn.classList.add('selected');
+      }
+    });
+  });
+
+  function workingDaysInMonth(year, month, dayFilter) {
+    const out = [];
+    const d = new Date(year, month, 1);
+    while (d.getMonth() === month) {
+      if (dayFilter.includes(d.getDay())) out.push(new Date(d));
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  }
+
+  function saveToLocalStorage() {
+    localStorage.setItem('caregiversDailyData', JSON.stringify(caregivers));
+  }
+
+  function renderTable() {
+    const tbody = document.querySelector('#caregiverTable tbody');
+    tbody.innerHTML = '';
+    const y = Number(yearInput.value);
+    const m = Number(monthSelect.value);
+    let used = 0;
+
+    caregivers.forEach((c, idx) => {
+      const all = workingDaysInMonth(y, m, c.selectedDays);
+      const pp1Days = all.filter(d => d.getDate() <= 15);
+      const pp2Days = all.filter(d => d.getDate() >= 16);
+
+      const pp1Hours = pp1Days.length * c.hoursPerDay;
+      const pp2Hours = pp2Days.length * c.hoursPerDay;
+      const totalHours = pp1Hours + pp2Hours;
+      used += totalHours;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.name}</td>
+        <td>${c.selectedDays.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</td>
+        <td>${pp1Days.length}</td>
+        <td>${pp1Hours.toFixed(2)}</td>
+        <td>${pp2Days.length}</td>
+        <td>${pp2Hours.toFixed(2)}</td>
+        <td>${totalHours.toFixed(2)}</td>
+        <td><button class="removeBtn" data-index="${idx}">Remove</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    remaining = totalPool - used;
+    remainingEl.textContent = remaining.toFixed(2);
+    remainingWrap.classList.toggle('negative', remaining < 0);
+
+    tbody.querySelectorAll('.removeBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.index);
+        caregivers.splice(i, 1);
+        saveToLocalStorage();
+        renderTable();
+      });
+    });
+  }
+
+  document.getElementById('caregiverForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const hoursPerDay = Number(document.getElementById('hoursPerDay').value);
+    const selectedDays = Array.from(selectedDaysSet).sort((a,b)=>a-b);
+    if (!name) return;
+
+    caregivers.push({ name, selectedDays, hoursPerDay });
+    saveToLocalStorage();
+
+    e.target.reset();
+    selectedDaysSet.clear();
+    dayButtons.forEach(b => b.classList.remove('selected'));
+    renderTable();
+  });
+
+  document.getElementById('monthForm').addEventListener('submit', e => {
+    e.preventDefault();
+    renderTable();
+  });
+
+  renderTable();
+</script>
+
+</body>
+</html>
